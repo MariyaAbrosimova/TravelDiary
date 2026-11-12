@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WanderLog — Дневник путешествий</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Динамический атмосферный фон из фотографий путешествий -->
+    <div class="ambient-bg">
+        <div class="ambient-slide active" id="bgSlide1"></div>
+        <div class="ambient-slide" id="bgSlide2"></div>
+        <div class="ambient-overlay"></div>
+    </div>
+
+    <header class="navbar">
+        <div class="container nav-content">
+            <div class="logo">
+                <span class="logo-icon">🧭</span>
+                <span>WanderLog</span>
+            </div>
+            <nav class="nav-links">
+                <button class="nav-btn active" data-section="tripsSection">Мои поездки</button>
+                <button class="nav-btn" id="navAddBtn" data-section="addSection">+ Добавить поездку</button>
+                <button class="nav-btn" data-section="statsSection">Статистика</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- 1. СЕКЦИЯ СПИСКА ПОЕЗДОК -->
+        <section id="tripsSection" class="page-section active">
+            <div class="section-header">
+                <div>
+                    <h1>Мои путешествия</h1>
+                    <p class="subtitle">Атмосферный дневник маршрутов, впечатлений и кадров</p>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="searchInput" placeholder="Поиск по стране, городу или метке...">
+                </div>
+            </div>
+
+            <div id="tripsGrid" class="trips-grid"></div>
+        </section>
+
+        <!-- 2. СЕКЦИЯ ДЕТАЛЬНОГО ПРОСМОТРА ПОЕЗДКИ -->
+        <section id="detailSection" class="page-section">
+            <div class="detail-top-actions">
+                <button id="backToTripsBtn" class="btn-glass">← Назад к списку</button>
+                <button id="detailEditBtn" class="btn-primary">✏️ Редактировать поездку</button>
+            </div>
+            <div id="detailContent" class="detail-container"></div>
+        </section>
+
+        <!-- 3. СЕКЦИЯ ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ ПОЕЗДКИ -->
+        <section id="addSection" class="page-section">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2 id="formTitle">Новая поездка</h2>
+                    <span class="draft-badge" id="draftStatus">Черновик сохраняется</span>
+                </div>
+
+                <form id="tripForm" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="countryInput">Страна *</label>
+                            <input type="text" id="countryInput" placeholder="Например: Италия">
+                            <span class="error-msg" id="countryError">Только буквы, от 2 до 50 символов</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cityInput">Город *</label>
+                            <input type="text" id="cityInput" placeholder="Например: Рим">
+                            <span class="error-msg" id="cityError">Только буквы, от 2 до 50 символов</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDateInput">Дата начала (ДД-ММ-ГГГГ) *</label>
+                            <input type="text" id="startDateInput" placeholder="10-05-2026" maxlength="10">
+                            <span class="error-msg" id="startDateError">Формат ДД-ММ-ГГГГ</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endDateInput">Дата окончания (ДД-ММ-ГГГГ) *</label>
+                            <input type="text" id="endDateInput" placeholder="18-05-2026" maxlength="10">
+                            <span class="error-msg" id="endDateError">Формат ДД-ММ-ГГГГ (не раньше даты начала)</span>
+                        </div>
+                    </div>
+
+                    <!-- Индикатор автоматического расчета длительности -->
+                    <div class="duration-preview" id="durationPreview">
+                        Длительность поездки: <strong>укажите корректные даты</strong>
+                    </div>
+
+                    <!-- Геометки / интересные места -->
+                    <div class="form-group">
+                        <label>Геометки / ключевые места</label>
+                        <div class="photo-input-row">
+                            <input type="text" id="geotagInput" placeholder="Например: Колизей, Пьяцца Навона или 41.8902, 12.4922">
+                            <button type="button" id="addGeotagBtn" class="btn-glass">+ Метка</button>
+                        </div>
+                        <div id="draftGeotagsList" class="draft-geotags-list"></div>
+                    </div>
+
+                    <!-- Загрузка фото: Drag-and-Drop, выбор файлов с ПК и ссылки (включая Google Диск) -->
+                    <div class="form-group">
+                        <label>Фотографии из поездки</label>
+
+                        <div id="dropZone" class="drop-zone">
+                            <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                            <div class="drop-zone-icon">📸</div>
+                            <div class="drop-zone-title">Перетащите фотографии сюда или нажмите для обзора</div>
+                            <div class="drop-zone-hint">Поддерживаются JPG, PNG, WebP (автоматическое сжатие для хранения)</div>
+                        </div>
+
+                        <div class="url-toggle-row">
+                            <span class="url-label">Или добавьте ссылку (URL / Google Диск):</span>
+                            <div class="photo-input-row">
+                                <input type="url" id="photoUrlInput" placeholder="https://drive.google.com/... или прямая ссылка">
+                                <button type="button" id="addPhotoBtn" class="btn-glass">Добавить</button>
+                            </div>
+                            <span class="error-msg" id="photoError">Введите корректную ссылку (http:// или https://)</span>
+                        </div>
+
+                        <div id="draftPhotosList" class="draft-photos-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="impressionsInput">Впечатления и заметки *</label>
+                        <textarea id="impressionsInput" rows="4" placeholder="Что больше всего запомнилось в этой поездке?"></textarea>
+                        <span class="error-msg" id="impressionsError">Напишите хотя бы пару слов о поездке</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancelEditBtn" class="btn-outline" style="display: none;">Отмена</button>
+                        <button type="button" id="clearDraftBtn" class="btn-outline">Очистить форму</button>
+                        <button type="submit" id="submitTripBtn" class="btn-primary">Сохранить поездку</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 4. СЕКЦИЯ СТАТИСТИКИ -->
+        <section id="statsSection" class="page-section">
+            <h1>Статистика путешествий</h1>
+            <p class="subtitle">Сводка всех посещённых мест и проведённых в дороге дней</p>
+
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <span class="stat-value" id="totalTripsStat">0</span>
+                    <span class="stat-label">Всего поездок</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="totalCountriesStat">0</span>
+                    <span class="stat-label">Уникальных стран</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="totalCitiesStat">0</span>
+                    <span class="stat-label">Уникальных городов</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="totalDaysStat">0</span>
+                    <span class="stat-label">Дней в путешествиях</span>
+                </div>
+            </div>
+
+            <div class="unique-lists-grid">
+                <div class="unique-box">
+                    <h3>🌍 Посещённые страны</h3>
+                    <div id="uniqueCountriesList" class="tags-cloud"></div>
+                </div>
+                <div class="unique-box">
+                    <h3>🏙️ Посещённые города</h3>
+                    <div id="uniqueCitiesList" class="tags-cloud"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
